@@ -2,7 +2,7 @@ barn
 ####
 .. .. |PyPI-Status| |PyPI-Versions| |Build-Status| |Codecov| |LICENCE|
 
-Simple Python-based local/remote dataset store.
+Simple local/remote dataset store for Python.
 
 .. |barn_icon| image:: https://github.com/shaypal5/barn/blob/cc5595bbb78f784a3174a07157083f755fc93172/barn.png
    :height: 87
