@@ -53,7 +53,7 @@ def _subfolder_name(dataset_name):
 
 def _blob_name(dataset_name, file_name):
     subfolder = _subfolder_name(dataset_name=dataset_name)
-    return '{}/{}'.format(subfolder, file_name)
+    return 'barn/{}/{}'.format(subfolder, file_name)
 
 
 def upload_dataset(dataset_name, file_path, **kwargs):

@@ -8,7 +8,7 @@ from pdutil.serial import SerializationFormat
 
 from .cfg import (
     _snail_case,
-    data_dirpath,
+    dataset_dirpath,
     dataset_filepath,
 )
 from .exceptions import (
@@ -29,14 +29,17 @@ class Dataset(object):
         The name of the dataset. Used mainly in printing messages.
     task : str, optional
         The data science task this dataset serves. Optional.
-    fname_base : str, optional
-        The base of the file name for the dataset, without any file extension.
-        E.g. 'myds' for 'myds.csv'. If not given, a snail_cased version of the
-        dataset name is used.
     default_ext : str, optional
         The default extension used for instances of this dataset. Also dictates
         the serialization format used by default by methods df(), dump_df() and
         upload_df(). Defaults to 'csv'.
+    fname_base : str, optional
+        The base of the file name for the dataset, without any file extension.
+        E.g. 'myds' for 'myds.csv'. If not given, a snail_cased version of the
+        dataset name is used.
+    singleton : bool, default False
+        If set, this dataset is assumed to be composed of a single instance,
+        and as such no dataset-specific sub-directory is created.
     **kwargs : extra keyword arguments
         Extra keyword arguments, representing additional attributes of the
         dataset. E.g., 'language=en' or 'source=newspaper'.
@@ -44,16 +47,17 @@ class Dataset(object):
 
     EXT_PATTERN = r'\.([a-z]+)'
 
-    def __init__(self, name, task=None, fname_base=None, default_ext=None,
-                 **kwargs):
+    def __init__(self, name, task=None, default_ext=None, fname_base=None,
+                 singleton=False, **kwargs):
         self.name = name
         self.task = task
-        if fname_base is None:
-            fname_base = _snail_case(name)
-        self.fname_base = fname_base
         if default_ext is None:
             default_ext = 'csv'
         self.default_ext = default_ext
+        if fname_base is None:
+            fname_base = _snail_case(name)
+        self.fname_base = fname_base
+        self.singleton = singleton
         self.kwargs = kwargs
 
     @staticmethod
@@ -65,7 +69,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
@@ -89,7 +93,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
@@ -100,8 +104,15 @@ class Dataset(object):
         str
             The appropariate filepath.
         """
+        if self.singleton:
+            return dataset_filepath(
+                filename=self.fname(tags=tags, ext=ext),
+                task=self.task,
+                **self.kwargs,
+            )
         return dataset_filepath(
             filename=self.fname(tags=tags, ext=ext),
+            dataset_name=self.name,
             task=self.task,
             **self.kwargs,
         )
@@ -113,7 +124,7 @@ class Dataset(object):
         ----------
         source_fpath : str
             The full path for the source file to use.
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
@@ -127,7 +138,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
@@ -154,7 +165,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
@@ -179,7 +190,8 @@ class Dataset(object):
 
     def _find_extension(self, tags=None):
         fpattern = self._fname_patten(tags=tags)
-        data_dir = data_dirpath(task=self.task, **self.kwargs)
+        data_dir = dataset_dirpath(
+            dataset_name=self.name, task=self.task, **self.kwargs)
         for fname in os.listdir(data_dir):
             match = re.match(fpattern, fname)
             if match:
@@ -191,7 +203,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the desired instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
@@ -225,7 +237,7 @@ class Dataset(object):
         ----------
         df : pandas.DataFrame
             The dataframe to dump to file.
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
@@ -249,7 +261,7 @@ class Dataset(object):
         ----------
         df : pandas.DataFrame
             The dataframe to dump and upload.
-        tags : list, optional
+        tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
