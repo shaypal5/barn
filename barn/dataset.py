@@ -32,7 +32,8 @@ class Dataset(object):
     default_ext : str, optional
         The default extension used for instances of this dataset. Also dictates
         the serialization format used by default by methods df(), dump_df() and
-        upload_df(). Defaults to 'csv'.
+        upload_df(). Support 'csv' and 'feather' (for Feather format).
+        Defaults to 'csv'.
     fname_base : str, optional
         The base of the file name for the dataset, without any file extension.
         E.g. 'myds' for 'myds.csv'. If not given, a snail_cased version of the
@@ -157,6 +158,8 @@ class Dataset(object):
         upload_dataset(
             dataset_name=self.name,
             file_path=fpath,
+            task=self.task,
+            dataset_attributes=self.kwargs,
             **kwargs,
         )
 
@@ -190,8 +193,11 @@ class Dataset(object):
 
     def _find_extension(self, tags=None):
         fpattern = self._fname_patten(tags=tags)
-        data_dir = dataset_dirpath(
-            dataset_name=self.name, task=self.task, **self.kwargs)
+        if self.singleton:
+            data_dir = dataset_dirpath(task=self.task, **self.kwargs)
+        else:
+            data_dir = dataset_dirpath(
+                dataset_name=self.name, task=self.task, **self.kwargs)
         for fname in os.listdir(data_dir):
             match = re.match(fpattern, fname)
             if match:
