@@ -7,8 +7,11 @@ import setuptools
 import versioneer
 
 
-INSTALL_REQUIRES = ['birch', 'pdutil']
-AZURE_REQUIRES = ['azure', 'decore']
+INSTALL_REQUIRES = [
+    'birch==0.0.9', 'pdutil==0.0.8',
+    'azure-storage==0.36.0', 'decore==0.0.1',
+]
+
 TEST_REQUIRES = [
     # testing and coverage
     'pytest', 'coverage', 'pytest-cov',
@@ -38,7 +41,7 @@ setuptools.setup(
     ],
     extras_require={
         'test': TEST_REQUIRES + INSTALL_REQUIRES,
-        'azure': AZURE_REQUIRES + INSTALL_REQUIRES,
+        # 'azure': AZURE_REQUIRES + INSTALL_REQUIRES,
     },
     classifiers=[
         # Trove classifiers

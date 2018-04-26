@@ -46,7 +46,7 @@ def data_dirpath(task=None, **kwargs):
     path = _base_dir()
     if task:
         path = os.path.join(path, _snail_case(task))
-    for k, v in kwargs.items():
+    for k, v in sorted(kwargs.items()):
         subdir_name = '{}_{}'.format(_snail_case(k), _snail_case(v))
         path = os.path.join(path, subdir_name)
     os.makedirs(path, exist_ok=True)

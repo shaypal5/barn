@@ -181,6 +181,8 @@ class Dataset(object):
         download_dataset(
             dataset_name=self.name,
             file_path=fpath,
+            task=self.task,
+            dataset_attributes=self.kwargs,
             **kwargs,
         )
 
