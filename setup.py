@@ -8,7 +8,7 @@ import versioneer
 
 
 INSTALL_REQUIRES = [
-    'birch==0.0.9', 'pdutil==0.0.8',
+    'birch>=0.0.9', 'pdutil==0.0.8',
     'azure-storage==0.36.0', 'decore==0.0.1',
 ]
 
