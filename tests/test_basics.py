@@ -7,7 +7,7 @@ test_ds1 = Dataset(
 )
 
 
-def basic_fname():
+def test_fname():
     some_name = test_ds1.fname()
     assert some_name.endswith('.csv')
     tag1 = 'hovercraft'
