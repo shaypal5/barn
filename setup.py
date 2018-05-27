@@ -17,7 +17,7 @@ TEST_REQUIRES = [
     'pytest', 'coverage', 'pytest-cov',
     # unmandatory dependencies of the package itself
     'azure-storage',
-    # to be able to run `python setup.py checkdocs`
+    # to be able to run  `python setup.py checkdocs`
     'collective.checkdocs', 'pygments',
 ]
 
