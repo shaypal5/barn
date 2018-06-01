@@ -14,6 +14,10 @@ Simple local/remote dataset store for Python.
 .. code-block:: python
 
   from barn import Dataset
+  twitter_usa = Dataset(name='twitter_usa', task='NER')
+  # download from an azure block blob storage and load into a dataframe
+  twitter_usa.download(tags=['preprocessed'], version='20180305')
+  df = twitter_usa.df(tags=['preprocessed'], version='20180305')
 
 .. contents::
 
