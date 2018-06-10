@@ -6,13 +6,6 @@ barn |barn_icon|
 
 Simple local/remote dataset store for Python.
 
-.. |barn_icon| image:: https://github.com/shaypal5/barn/blob/cc5595bbb78f784a3174a07157083f755fc93172/barn.png
-   :height: 87
-   :width: 40 px
-   :scale: 50 %
-   
-.. .. image:: https://github.com/shaypal5/barn/blob/b10a19a28cb1fc41d0c596df5bcd8390e7c22ee7/barn.png
-
 .. code-block:: python
 
   from barn import Dataset
