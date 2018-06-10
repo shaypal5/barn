@@ -1,6 +1,8 @@
-barn
-####
+barn |barn_icon|
+################
 |PyPI-Status| |PyPI-Versions| |Build-Status| |Codecov| |LICENCE|
+
+.. |barn_icon| image:: https://github.com/shaypal5/barn/blob/6f814eb9b6721e70c657e28e1ca43576ff6c2704/barn.png
 
 Simple local/remote dataset store for Python.
 
