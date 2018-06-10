@@ -1,6 +1,6 @@
 barn
 ####
-.. .. |PyPI-Status| |PyPI-Versions| |Build-Status| |Codecov| |LICENCE|
+|PyPI-Status| |PyPI-Versions| |Build-Status| |Codecov| |LICENCE|
 
 Simple local/remote dataset store for Python.
 

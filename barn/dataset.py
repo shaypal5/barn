@@ -65,13 +65,19 @@ class Dataset(object):
     def _tags_to_str(tags=None):
         return '_'+'_'.join(sorted(tags)) if tags else ''
 
-    def fname(self, tags=None, ext=None):
+    @staticmethod
+    def _version_to_str(version=None):
+        return '_{}'.format(version) if version else ''
+
+    def fname(self, version=None, tags=None, ext=None):
         """Returns the filename appropriate for an instance of this dataset.
 
         Parameters
         ----------
+        version: str, optional
+            The version of the instance of this dataset.
         tags : list of str, optional
-            The tags associated with the given instance of this dataset.
+            The tags associated with the instance of this dataset.
         ext : str, optional
             The file extension to use. If not given, the default extension is
             used.
@@ -83,17 +89,20 @@ class Dataset(object):
         """
         if ext is None:
             ext = self.default_ext
-        return '{}{}.{}'.format(
+        return '{}{}{}.{}'.format(
             self.fname_base,
             self._tags_to_str(tags=tags),
+            self._version_to_str(version=version),
             ext,
         )
 
-    def fpath(self, tags=None, ext=None):
+    def fpath(self, version=None, tags=None, ext=None):
         """Returns the filepath appropriate for an instance of this dataset.
 
         Parameters
         ----------
+        version: str, optional
+            The version of the instance of this dataset.
         tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
@@ -107,94 +116,50 @@ class Dataset(object):
         """
         if self.singleton:
             return dataset_filepath(
-                filename=self.fname(tags=tags, ext=ext),
+                filename=self.fname(version=version, tags=tags, ext=ext),
                 task=self.task,
                 **self.kwargs,
             )
         return dataset_filepath(
-            filename=self.fname(tags=tags, ext=ext),
+            filename=self.fname(version=version, tags=tags, ext=ext),
             dataset_name=self.name,
             task=self.task,
             **self.kwargs,
         )
 
-    def add_local(self, source_fpath, tags=None, ext=None):
+    def add_local(self, source_fpath, version=None, tags=None):
         """Copies a given file into local store as an instance of this dataset.
 
         Parameters
         ----------
         source_fpath : str
             The full path for the source file to use.
+        version: str, optional
+            The version of the instance of this dataset.
         tags : list of str, optional
             The tags associated with the given instance of this dataset.
-        ext : str, optional
-            The file extension to use. If not given, the default extension is
-            used.
+
+        Returns
+        -------
+        ext : str
+            The extension of the file added.
         """
-        fpath = self.fpath(tags=tags, ext=ext)
+        ext = os.path.splitext(source_fpath)[1]
+        ext = ext[1:]  # we dont need the dot
+        fpath = self.fpath(version=version, tags=tags, ext=ext)
         shutil.copyfile(src=source_fpath, dst=fpath)
+        return ext
 
-    def upload(self, tags=None, ext=None, source_fpath=None, **kwargs):
-        """Uploads the given instance of this dataset to dataset store.
-
-        Parameters
-        ----------
-        tags : list of str, optional
-            The tags associated with the given instance of this dataset.
-        ext : str, optional
-            The file extension to use. If not given, the default extension is
-            used.
-        source_fpath : str, optional
-            The full path for the source file to use. If given, the file is
-            copied from the given path to the local storage path before
-            uploading.
-        **kwargs : extra keyword arguments
-            Extra keyword arguments are forwarded to
-            azure.storage.blob.BlockBlobService.create_blob_from_path.
-        """
-        if source_fpath:
-            self.add_local(source_fpath=source_fpath, tags=tags, ext=ext)
-        fpath = self.fpath(tags=tags, ext=ext)
-        upload_dataset(
-            dataset_name=self.name,
-            file_path=fpath,
-            task=self.task,
-            dataset_attributes=self.kwargs,
-            **kwargs,
-        )
-
-    def download(self, tags=None, ext=None, **kwargs):
-        """Downloads the given instance of this dataset from dataset store.
-
-        Parameters
-        ----------
-        tags : list of str, optional
-            The tags associated with the given instance of this dataset.
-        ext : str, optional
-            The file extension to use. If not given, the default extension is
-            used.
-        **kwargs : extra keyword arguments
-            Extra keyword arguments are forwarded to
-            azure.storage.blob.BlockBlobService.get_blob_to_path.
-        """
-        fpath = self.fpath(tags=tags, ext=ext)
-        download_dataset(
-            dataset_name=self.name,
-            file_path=fpath,
-            task=self.task,
-            dataset_attributes=self.kwargs,
-            **kwargs,
-        )
-
-    def _fname_patten(self, tags=None):
-        return '{}{}{}'.format(
+    def _fname_pattern(self, version=None, tags=None):
+        return '{}{}{}{}'.format(
             self.fname_base,
             self._tags_to_str(tags),
+            self._version_to_str(version),
             self.EXT_PATTERN,
         )
 
-    def _find_extension(self, tags=None):
-        fpattern = self._fname_patten(tags=tags)
+    def _find_extension(self, version=None, tags=None):
+        fpattern = self._fname_pattern(version=version, tags=tags)
         if self.singleton:
             data_dir = dataset_dirpath(task=self.task, **self.kwargs)
         else:
@@ -206,11 +171,105 @@ class Dataset(object):
                 return match.group(1)
         return None
 
-    def df(self, tags=None, ext=None, **kwargs):
+    def upload(self, version=None, tags=None, ext=None, source_fpath=None,
+               overwrite=False, **kwargs):
+        """Uploads the given instance of this dataset to dataset store.
+
+        Parameters
+        ----------
+        version: str, optional
+            The version of the instance of this dataset.
+        tags : list of str, optional
+            The tags associated with the given instance of this dataset.
+        ext : str, optional
+            The file extension to use. If not given, the default extension is
+            used. If source_fpath is given, this is ignored, and the extension
+            of the source f
+        source_fpath : str, optional
+            The full path for the source file to use. If given, the file is
+            copied from the given path to the local storage path before
+            uploading.
+        **kwargs : extra keyword arguments
+            Extra keyword arguments are forwarded to
+            azure.storage.blob.BlockBlobService.create_blob_from_path.
+        """
+        if source_fpath:
+            ext = self.add_local(
+                source_fpath=source_fpath, version=version, tags=tags)
+        if ext is None:
+            ext = self._find_extension(version=version, tags=tags)
+        if ext is None:
+            attribs = "{}{}".format(
+                "version={} and ".format(version) if version else "",
+                "tags={}".format(tags) if tags else "",
+            )
+            raise MissingDatasetError(
+                "No dataset with {} in local store!".format(attribs))
+        fpath = self.fpath(version=version, tags=tags, ext=ext)
+        if not os.path.isfile(fpath):
+            attribs = "{}{}ext={}".format(
+                "version={} and ".format(version) if version else "",
+                "tags={} and ".format(tags) if tags else "",
+                ext,
+            )
+            raise MissingDatasetError(
+                "No dataset with {} in local store! (path={})".format(
+                    attribs, fpath))
+        upload_dataset(
+            dataset_name=self.name,
+            file_path=fpath,
+            task=self.task,
+            dataset_attributes=self.kwargs,
+            **kwargs,
+        )
+
+    def download(self, version=None, tags=None, ext=None, overwrite=False,
+                 verbose=False, **kwargs):
+        """Downloads the given instance of this dataset from dataset store.
+
+        Parameters
+        ----------
+        version: str, optional
+            The version of the instance of this dataset.
+        tags : list of str, optional
+            The tags associated with the given instance of this dataset.
+        ext : str, optional
+            The file extension to use. If not given, the default extension is
+            used.
+        overwrite : bool, default False
+            If set to True, the given instance of the dataset is downloaded
+            from dataset store even if it exists in the local data directory.
+            Otherwise, if a matching dataset is found localy, download is
+            skipped.
+        verbose : bool, default False
+            If set to True, informative messages are printed.
+        **kwargs : extra keyword arguments
+            Extra keyword arguments are forwarded to
+            azure.storage.blob.BlockBlobService.get_blob_to_path.
+        """
+        fpath = self.fpath(version=version, tags=tags, ext=ext)
+        if os.path.isfile(fpath) and not overwrite:
+            if verbose:
+                print(
+                    "File exists and overwrite set to False, so not "
+                    "downloading {} with version={} and tags={}".format(
+                        self.name, version, tags))
+                return
+        download_dataset(
+            dataset_name=self.name,
+            file_path=fpath,
+            task=self.task,
+            dataset_attributes=self.kwargs,
+            **kwargs,
+        )
+
+    def df(self, version=None, tags=None, ext=None, **kwargs):
         """Loads an instance of this dataset into a dataframe.
 
         Parameters
         ----------
+        version: str, optional
+            The version of the instance of this dataset.
         tags : list of str, optional
             The tags associated with the desired instance of this dataset.
         ext : str, optional
@@ -226,25 +285,27 @@ class Dataset(object):
         pandas.DataFrame
             A dataframe containing the desired instance of this dataset.
         """
-        ext = self._find_extension(tags=tags)
+        ext = self._find_extension(version=version, tags=tags)
         if ext is None:
-            if tags is None:
-                raise MissingDatasetError("No instance of {} dataset!".format(
-                    self.name))
+            attribs = "{}{}".format(
+                "version={} and ".format(version) if version else "",
+                "tags={}".format(tags) if tags else "",
+            )
             raise MissingDatasetError(
-                "No instance of dataset {} with tags: {}".format(
-                    self.name, tags))
-        fpath = self.fpath(tags=tags, ext=ext)
+                "No dataset with {} in local store!".format(attribs))
+        fpath = self.fpath(version=version, tags=tags, ext=ext)
         fmt = SerializationFormat.by_name(ext)
         return fmt.deserialize(fpath, **kwargs)
 
-    def dump_df(self, df, tags=None, ext=None, **kwargs):
+    def dump_df(self, df, version=None, tags=None, ext=None, **kwargs):
         """Dumps an instance of this dataset into a file.
 
         Parameters
         ----------
         df : pandas.DataFrame
             The dataframe to dump to file.
+        version: str, optional
+            The version of the instance of this dataset.
         tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
@@ -257,11 +318,11 @@ class Dataset(object):
         """
         if ext is None:
             ext = self.default_ext
-        fpath = self.fpath(tags=tags, ext=ext)
+        fpath = self.fpath(version=version, tags=tags, ext=ext)
         fmt = SerializationFormat.by_name(ext)
         fmt.serialize(df, fpath, **kwargs)
 
-    def upload_df(self, df, tags=None, ext=None, **kwargs):
+    def upload_df(self, df, version=None, tags=None, ext=None, **kwargs):
         """Dumps an instance of this dataset into a file and then uploads it
         to dataset store.
 
@@ -269,6 +330,8 @@ class Dataset(object):
         ----------
         df : pandas.DataFrame
             The dataframe to dump and upload.
+        version: str, optional
+            The version of the instance of this dataset.
         tags : list of str, optional
             The tags associated with the given instance of this dataset.
         ext : str, optional
@@ -279,5 +342,5 @@ class Dataset(object):
             of the SerializationFormat object corresponding to the extension
             used.
         """
-        self.dump_df(df=df, tags=tags, ext=ext, **kwargs)
-        self.upload(tags=tags, ext=ext)
+        self.dump_df(df=df, version=version, tags=tags, ext=ext, **kwargs)
+        self.upload(version=version, tags=tags, ext=ext)
