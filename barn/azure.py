@@ -111,7 +111,7 @@ def upload_dataset(
 
 def download_dataset(
         dataset_name, file_path, task=None, dataset_attributes=None, **kwargs):
-    """Uploads the given dataset from dataset store.
+    """Downloads the given dataset from dataset store.
 
     Parameters
     ----------
